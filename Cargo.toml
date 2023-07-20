@@ -1,0 +1,15 @@
+[workspace]
+members = [
+  "emi-front",
+  "emi-go",
+]
+resolver = "2"
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.release]
+debug = true

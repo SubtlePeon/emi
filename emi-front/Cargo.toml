@@ -1,0 +1,16 @@
+[package]
+name = "emi-front"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# color-eyre = { version = "0.6", default-features = false }
+color-eyre = "0.6"
+# anyhow = { version = "1", features = ["backtrace"] }
+eframe = "0.21"
+# egui-macroquad = "0.15"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+emi-go = { version = "0.1", path = "../emi-go" }
