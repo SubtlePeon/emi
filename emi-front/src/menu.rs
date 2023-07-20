@@ -1,4 +1,4 @@
-use eframe::egui::{self, Align, Button, Context, Layout, Pos2, Rect, Slider, Vec2};
+use eframe::egui::{self, Button, Context};
 use tracing::{error, info};
 
 #[derive(Debug, Clone)]
@@ -52,27 +52,14 @@ impl Menu {
 
         egui::CentralPanel::default()
             .show(ctx, |ui| {
-                let one_quarter = ui.available_width() / 4.0;
-                let one_half = ui.available_width() / 2.0;
-                let height = ui.available_height();
-                let mut ui = ui.child_ui(
-                    Rect::from_min_max(
-                        Pos2::new(one_quarter, 0.0),
-                        Pos2::new(one_quarter + one_half, height),
-                    ),
-                    Layout::top_down(Align::Center),
-                );
-                ui.add_space(5.0);
-                ui.label("Create Go Game");
-                ui.add(
-                    Slider::new(board_size, 9..=19)
-                        .text("Board Size")
-                        .clamp_to_range(true),
-                );
-                if ui
-                    .add(Button::new("Start").min_size(Vec2::new(one_quarter, 0.0)))
-                    .clicked()
-                {
+                ui.heading("Create Go Game");
+
+                ui.horizontal(|ui| {
+                    ui.label("Go board size (drag): ");
+                    ui.add(egui::widgets::DragValue::new(board_size).clamp_range(9..=19));
+                });
+
+                if ui.add(Button::new("Start")).clicked() {
                     info!("Starting go game!");
                     return true;
                 }

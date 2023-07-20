@@ -1,8 +1,25 @@
 use eframe::egui::{
-    self, emath, vec2, Color32, Frame, Painter, Pos2, Rect, Response, Sense, Shape, Stroke, Vec2, Layout, Align
+    self, emath, vec2, Color32, Frame, Painter, Pos2, Rect, Response, Sense, Shape, Stroke, Vec2,
 };
 use emi_go::{Move, Piece};
 use tracing::debug;
+
+#[allow(unused)]
+#[derive(Debug, Clone)]
+pub enum Mark {
+    /// No mark.
+    None,
+    /// unimplemented
+    Triangle,
+    /// unimplemented
+    Square,
+    /// unimplemented
+    Numbering,
+    /// unimplemented
+    Lettering,
+    /// Draws a dot on the stone.
+    Dot,
+}
 
 #[derive(Debug, Clone)]
 pub enum GoResponse {
@@ -10,8 +27,24 @@ pub enum GoResponse {
     MainMenu,
 }
 
-pub fn draw_go_piece(painter: &Painter, piece: Piece, pos: Pos2, radius: f32) {
-    let color = match piece {
+fn draw_mark(painter: &Painter, piece_color: Piece, pos: Pos2, piece_radius: f32, mark: Mark) {
+    let color = match piece_color {
+        Piece::None => {
+            return;
+        }
+        Piece::Black => Color32::WHITE.gamma_multiply(0.9),
+        Piece::White => Color32::BLACK.gamma_multiply(0.9),
+    };
+
+    match mark {
+        Mark::None => {}
+        Mark::Dot => _ = painter.add(Shape::circle_filled(pos, piece_radius / 3.0, color)),
+        _ => unimplemented!(),
+    }
+}
+
+fn draw_go_piece(painter: &Painter, piece_color: Piece, pos: Pos2, radius: f32, mark: Mark) {
+    let color = match piece_color {
         Piece::None => {
             return;
         }
@@ -20,6 +53,7 @@ pub fn draw_go_piece(painter: &Painter, piece: Piece, pos: Pos2, radius: f32) {
     };
     let piece = Shape::circle_filled(pos, radius, color);
     painter.add(piece);
+    draw_mark(painter, piece_color, pos, radius, mark);
 }
 
 fn draw_go_board(go_game: &emi_go::Game, painter: &egui::Painter, board_rect: Rect) {
@@ -120,7 +154,14 @@ fn game_go_display_pieces(go_game: &emi_go::Game, painter: &egui::Painter, board
             // Calculate coordinate values
             let pos =
                 board_rect.left_top() + vec2(2.0 * r * (x as f32) + r, 2.0 * r * (y as f32) + r);
-            draw_go_piece(&painter, go_game.board()[(x, y)], pos, r);
+
+            let mark = if go_game.last_played_pos() == Some([x, y]) {
+                Mark::Dot
+            } else {
+                Mark::None
+            };
+
+            draw_go_piece(&painter, go_game.board()[(x, y)], pos, r, mark);
         }
     }
 }
@@ -185,56 +226,54 @@ pub fn state_go(ctx: &egui::Context, go_game: &mut emi_go::Game) -> GoResponse {
         })
         .inner;
 
-    egui::SidePanel::right("game_go_control").show(ctx, |ui| {
-        ui.add_space(5.0);
-        // Something to show who is going next
-        // TODO: improve side ui
-        Frame::none().fill(Color32::DARK_GREEN.gamma_multiply(0.2)).outer_margin(2.0).show(ui, |ui| {
-            let (response, painter) =
-                ui.allocate_painter(vec2(ui.available_width() / 2.0, 20.0), Sense::hover());
-            let rect = response.rect;
-            let c = rect.center();
-            let radius = 8.0;
-            let shift = 3.0;
-            let line_width = 1.0;
+    egui::SidePanel::right("game_go_control")
+        .show_separator_line(false)
+        .resizable(false)
+        .show(ctx, |ui| {
+            ui.add_space(5.0);
+            // Something to show who is going next
+            // TODO: improve side ui
+            Frame::none().outer_margin(2.0).show(ui, |ui| {
+                let (response, painter) = ui.allocate_painter(vec2(50.0, 20.0), Sense::hover());
+                let rect = response.rect;
+                let c = rect.center();
+                let radius = 8.0;
+                let shift = 3.0;
+                let line_width = 1.0;
 
-            let mut color = Color32::WHITE;
-            let mut opp = Color32::BLACK;
+                let mut color = Color32::WHITE;
+                let mut opp = Color32::BLACK;
 
-            if go_game.next_to_play() == Piece::White {
-                (opp, color) = (color, opp);
+                if go_game.next_to_play() == Piece::White {
+                    (opp, color) = (color, opp);
+                }
+
+                painter.add(Shape::circle_filled(c + vec2(shift, 0.0), radius, color));
+                painter.add(Shape::circle_stroke(
+                    c + vec2(shift, 0.0),
+                    radius,
+                    Stroke::new(line_width, opp.gamma_multiply(0.8)),
+                ));
+                painter.add(Shape::circle_filled(c - vec2(shift, 0.0), radius, opp));
+                painter.add(Shape::circle_stroke(
+                    c - vec2(shift, 0.0),
+                    radius,
+                    Stroke::new(line_width, color.gamma_multiply(0.8)),
+                ));
+            });
+
+            if ui.button("Pass").clicked() {
+                let _ = go_game.play_(Move::Pass);
             }
 
-            painter.add(Shape::circle_filled(
-                c + vec2(shift, 0.0),
-                radius,
-                color,
-            ));
-            painter.add(Shape::circle_stroke(
-                c + vec2(shift, 0.0),
-                radius,
-                Stroke::new(line_width, opp.gamma_multiply(0.8)),
-            ));
-            painter.add(Shape::circle_filled(
-                c - vec2(shift, 0.0),
-                radius,
-                opp,
-            ));
-            painter.add(Shape::circle_stroke(
-                c - vec2(shift, 0.0),
-                radius,
-                Stroke::new(line_width, color.gamma_multiply(0.8)),
-            ));
+            if ui.button("Undo").clicked() {
+                // This will be the api:
+                // go_game.pass_turn(go_game.next_to_play());
+                //
+                // But for now...
+                go_game.undo();
+            }
         });
-
-        if ui.button("Pass").clicked() {
-            // This will be the api:
-            // go_game.pass_turn(go_game.next_to_play());
-            //
-            // But for now...
-            go_game.next_turn();
-        }
-    });
 
     egui::CentralPanel::default().show(ctx, |ui| {
         Frame::canvas(ui.style())

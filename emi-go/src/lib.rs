@@ -64,7 +64,9 @@ impl Game {
 
         let board = &mut self.board;
         match event {
-            Play { pos: [x, y], color } => {
+            Play {
+                pos: [x, y], color, ..
+            } => {
                 *board.get_mut(*x, *y) = *color;
                 self.ko_coord = None;
                 self.next_turn();
@@ -73,6 +75,7 @@ impl Game {
                 pos: [x, y],
                 color,
                 captured,
+                ..
             } => {
                 *board.get_mut(*x, *y) = *color;
                 for [rx, ry] in captured {
@@ -99,10 +102,57 @@ impl Game {
         }
     }
 
+    pub fn reverse_event_unchecked(&mut self, event: &Event) {
+        use Event::*;
+
+        let board = &mut self.board;
+        match event {
+            Play {
+                pos: [x, y],
+                prev_ko,
+                ..
+            } => {
+                *board.get_mut(*x, *y) = Piece::None;
+                self.ko_coord = *prev_ko;
+                self.prev_turn();
+            }
+            Capture {
+                pos: [x, y],
+                captured,
+                prev_ko,
+                color,
+            } => {
+                *board.get_mut(*x, *y) = Piece::None;
+                for [rx, ry] in captured {
+                    *board.get_mut(*rx, *ry) = color.opposing();
+                }
+                self.ko_coord = *prev_ko;
+                self.prev_turn();
+            }
+            Edit {
+                pos: [x, y],
+                from,
+                to: _,
+            } => {
+                *board.get_mut(*x, *y) = *from;
+            }
+            Edits(edits) => {
+                for edit in edits {
+                    self.reverse_event_unchecked(edit);
+                }
+            }
+            Pass { prev_ko, .. } => {
+                self.ko_coord = *prev_ko;
+                self.prev_turn()
+            }
+        }
+    }
+
     pub fn construct_event(&self, move_: Move) -> Event {
         match move_ {
             Move::Pass => Event::Pass {
                 color: self.next_to_play(),
+                prev_ko: self.ko_coord,
             },
             Move::Place { pos: [x, y], color } => {
                 // Check for capture
@@ -127,9 +177,14 @@ impl Game {
                         pos: [x, y],
                         color,
                         captured: captures,
+                        prev_ko: self.ko_coord,
                     }
                 } else {
-                    Event::Play { pos: [x, y], color }
+                    Event::Play {
+                        pos: [x, y],
+                        color,
+                        prev_ko: self.ko_coord,
+                    }
                 }
             }
         }
@@ -166,13 +221,25 @@ impl Game {
         // Check for illegal ko capture
         if let Event::Capture { pos, captured, .. } = &event {
             if self.ko_coord == Some(*pos) && captured.len() == 1 {
-                return Err(GoError::IllegalKo { move_ })
+                return Err(GoError::IllegalKo { move_ });
             }
         }
 
         self.apply_event_unchecked(&event);
 
+        // Add to event list
+        self.events.push(event);
+
         Ok(())
+    }
+
+    pub fn undo(&mut self) {
+        let Some(last) = self.events.pop() else { return; };
+        self.reverse_event_unchecked(&last);
+    }
+
+    pub fn last_was_pass(&self) -> bool {
+        self.events.last_was_pass()
     }
 
     /// Play a move. (Old)
@@ -253,6 +320,11 @@ impl Game {
         self.turn = self.turn.opposing();
     }
 
+    /// Changes turn.
+    pub fn prev_turn(&mut self) {
+        self.turn = self.turn.opposing();
+    }
+
     /// The piece color of the next player to play.
     pub fn next_to_play(&self) -> Piece {
         self.turn
@@ -263,6 +335,12 @@ impl Game {
     /// Currently assumes the go board is square.
     pub fn board_size(&self) -> u32 {
         self.board.board_size()
+    }
+
+    /// The last played position if the last move was not a
+    /// pass.
+    pub fn last_played_pos(&self) -> Option<[u32; 2]> {
+        self.events.last_played_pos()
     }
 }
 

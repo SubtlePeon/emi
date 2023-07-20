@@ -784,6 +784,7 @@ dependencies = [
  "emi-go",
  "tracing",
  "tracing-subscriber",
+ "wasm-bindgen-futures",
 ]
 
 [[package]]

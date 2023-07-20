@@ -9,11 +9,13 @@ pub enum Event {
     Play {
         pos: [u32; 2],
         color: Piece,
+        prev_ko: Option<[u32; 2]>,
     },
     Capture {
         pos: [u32; 2],
         color: Piece,
         captured: Vec<[u32; 2]>,
+        prev_ko: Option<[u32; 2]>,
     },
     Edit {
         pos: [u32; 2],
@@ -23,7 +25,8 @@ pub enum Event {
     Edits(Vec<Event>),
     Pass {
         color: Piece,
-    }
+        prev_ko: Option<[u32; 2]>,
+    },
 }
 
 use Event::*;
@@ -44,7 +47,6 @@ impl Event {
             _ => None,
         }
     }
-
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -55,12 +57,28 @@ impl Events {
         Events(Vec::new())
     }
 
+    pub fn push(&mut self, evt: Event) {
+        self.0.push(evt);
+    }
+
+    pub fn pop(&mut self) -> Option<Event> {
+        self.0.pop()
+    }
+
     pub fn last_played_pos(&self) -> Option<[u32; 2]> {
         self.0.last()?.play_pos()
     }
 
     pub fn last_played_color(&self) -> Option<Piece> {
         self.0.last()?.play_color()
+    }
+
+    pub fn last(&self) -> Option<&Event> {
+        self.0.last()
+    }
+
+    pub fn last_was_pass(&self) -> bool {
+        matches!(self.last(), Some(Pass { .. }))
     }
 }
 
