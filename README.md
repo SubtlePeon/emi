@@ -14,6 +14,11 @@ $ cd emi-front/
 $ cargo run
 ```
 
+## Features
+- Play go
+    - Supports 9x9 through 19x19 sizes
+    - Simple ko rules
+
 ## Todo
 - [ ] Polish go engine
     - [ ] Finishing and scoring go games
