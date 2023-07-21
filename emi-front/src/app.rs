@@ -1,8 +1,6 @@
 #[allow(unused_imports)]
 use tracing::{debug, error, info, trace, warn};
 
-use emi_go;
-
 use crate::game_go::{state_go, GoResponse};
 use crate::menu::{Menu, MenuResponse};
 
@@ -53,7 +51,9 @@ impl eframe::App for State {
                 match state_go(ctx, go_game) {
                     GoResponse::None => {}
                     GoResponse::MainMenu => {
-                        self.mode = Mode::Menu { menu: Menu::Main {} };
+                        self.mode = Mode::Menu {
+                            menu: Menu::Main {},
+                        };
                         info!("going to main menu");
                     }
                 }

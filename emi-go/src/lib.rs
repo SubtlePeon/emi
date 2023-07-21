@@ -160,7 +160,7 @@ impl Game {
                     .board
                     .surround(x, y)
                     .into_iter()
-                    .map(|(nx, ny)| {
+                    .flat_map(|(nx, ny)| {
                         if self.turn.opposing() != self.board.get(nx, ny) {
                             vec![]
                         } else if matches!(self.board.liberties(nx, ny), Some(0)) {
@@ -169,10 +169,9 @@ impl Game {
                             vec![]
                         }
                     })
-                    .flatten()
                     .collect();
 
-                if captures.len() > 0 {
+                if !captures.is_empty() {
                     Event::Capture {
                         pos: [x, y],
                         color,
@@ -279,7 +278,7 @@ impl Game {
                             self.board[(x, y)] = Piece::None;
                             return Err(GoError::IllegalKo { move_ });
                         } else {
-                            self.ko_coord = capture_location.get(0).copied();
+                            self.ko_coord = capture_location.first().copied();
                         }
                     } else {
                         self.ko_coord = None;

@@ -1,4 +1,4 @@
-use crate::{Board, Piece};
+use crate::Piece;
 
 #[derive(Debug, Clone, PartialEq)]
 /// An event in a go game.
@@ -69,7 +69,7 @@ impl Events {
         self.0.last()?.play_pos()
     }
 
-    pub fn last_played_color(&self) -> Option<Piece> {
+    pub fn _last_played_color(&self) -> Option<Piece> {
         self.0.last()?.play_color()
     }
 

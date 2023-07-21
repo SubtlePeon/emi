@@ -71,10 +71,8 @@ impl Board {
             if let Piece::None = self.get(x, y) {
                 liberties += 1;
                 false
-            } else if color == self.get(x, y) {
-                true
             } else {
-                false
+                color == self.get(x, y)
             }
         };
 

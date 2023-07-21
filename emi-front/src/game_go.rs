@@ -62,7 +62,7 @@ fn draw_go_board(go_game: &emi_go::Game, painter: &egui::Painter, board_rect: Re
 
     let board_size = board_rect.width();
     // The size of one square on the board
-    let unit = board_size / board_points as f32;
+    let unit = board_size / board_points;
     let thickness = (board_size / 400.0).ceil() * 0.5;
 
     let board = Shape::rect_filled(
@@ -161,7 +161,7 @@ fn game_go_display_pieces(go_game: &emi_go::Game, painter: &egui::Painter, board
                 Mark::None
             };
 
-            draw_go_piece(&painter, go_game.board()[(x, y)], pos, r, mark);
+            draw_go_piece(painter, go_game.board()[(x, y)], pos, r, mark);
         }
     }
 }
